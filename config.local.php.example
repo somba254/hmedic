@@ -1,0 +1,18 @@
+<?php
+// Copy this file to config.local.php and fill your external DB credentials.
+// This file is ignored by VCS and allows environment-specific overrides.
+
+$host = 'your-db-host.example.com';
+$user = 'your_db_user';
+$pass = 'your_db_password';
+$db   = 'hmedic_db';
+$port = 3306; // common MySQL port; change if needed
+
+// Example:
+// $host = '127.0.0.1';
+// $user = 'root';
+// $pass = 'secret';
+// $db   = 'hmedic_db';
+// $port = 3306;
+
+?>

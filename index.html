@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MediSync — Hospital Management System</title>
+
+  <!-- Configure Tailwind to use class-based dark mode BEFORE loading Tailwind -->
+  <script>
+    window.tailwind = window.tailwind || {};
+    tailwind = window.tailwind || {};
+    tailwind.config = tailwind.config || {};
+    tailwind.config.darkMode = 'class';
+  </script>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- Animated Background (persisting across dashboards) -->
+  <div class="animated-bg pointer-events-none">
+    <div class="blob"></div>
+    <div class="blob"></div>
+    <div class="blob"></div>
+    <div class="blob"></div>
+  </div>
+
+  <!-- ---------- LANDING / LOGIN ---------- -->
+  <section id="landing" class="page-section min-h-screen flex items-center justify-center p-6">
+    <div class="container max-w-5xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <div>
+          <h1 class="text-4xl md:text-5xl font-bold mb-4">Welcome to MediSync</h1>
+          <p class="text-lg mb-6">Modern hospital management system designed to streamline healthcare operations.</p>
+
+          <div class="space-y-4">
+            <div class="flex gap-3">
+              <div class="p-4 card rounded-lg shadow">
+                <h3 class="font-semibold">Secure</h3>
+                <p class="text-sm">Role-based access and secure local storage.</p>
+              </div>
+              <div class="p-4 card rounded-lg shadow">
+                <h3 class="font-semibold">Analytics</h3>
+                <p class="text-sm">Overview dashboards with charts and reports.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card rounded-xl shadow-lg p-6 backdrop-blur bg-opacity-60">
+            <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
+
+            <form id="loginForm" class="space-y-4">
+              <div>
+                <!-- Username input for login form. Required for authentication. -->
+                <label for="username" class="block text-sm font-medium mb-1">Username</label>
+                <input id="username" name="username" required class="form-control w-full px-4 py-2 rounded-md border" />
+              </div>
+
+              <div>
+                <!-- Password input for login form. Required for authentication. -->
+                <label for="password" class="block text-sm font-medium mb-1">Password</label>
+                <input id="password" name="password" type="password" required class="form-control w-full px-4 py-2 rounded-md border" />
+              </div>
+
+              <div>
+                <label for="role" class="block text-sm font-medium mb-1">Select Role</label>
+                <select id="role" name="role" class="form-control w-full px-4 py-2 rounded-md border">
+                  <option value="Admin">Administrator</option>
+                  <option value="Doctor">Doctor</option>
+                  <option value="Nurse">Nurse</option>
+                  <option value="Receptionist">Receptionist</option>
+                </select>
+              </div>
+
+              <div class="flex items-center justify-between mt-6">
+                <div class="flex items-center">
+                  <label class="toggle-switch mr-3">
+                    <input type="checkbox" id="darkModeToggle" />
+                    <span class="slider"></span>
+                  </label>
+                  <span class="text-sm">Dark Mode</span>
+                </div>
+
+                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                  Login
+                </button>
+              </div>
+            </form>
+          </div>
+
+  
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- ADMIN DASHBOARD ---------- -->
+  <section id="admin-dashboard" class="page-section hidden min-h-screen flex">
+    <aside class="w-64 bg-white/80 dark:bg-slate-800/90 p-4 border-r dark:border-slate-700">
+      <div class="mb-6 flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">Ad</div>
+        <div>
+          <div class="font-semibold">Admin</div>
+          <div class="text-xs text-gray-500 dark:text-gray-300">Administrator</div>
+        </div>
+      </div>
+
+      <nav class="space-y-1">
+        <button class="admin-side-btn w-full text-left" data-target="overview"> <i class="fa-solid fa-gauge-high mr-2"></i> Overview</button>
+        <button class="admin-side-btn w-full text-left" data-target="patients"> <i class="fa-solid fa-user-injured mr-2"></i> Patients</button>
+        <button class="admin-side-btn w-full text-left" data-target="billing"> <i class="fa-solid fa-file-invoice-dollar mr-2"></i> Billing</button>
+        <button class="admin-side-btn w-full text-left" data-target="staff"> <i class="fa-solid fa-users mr-2"></i> Staff</button>
+      </nav>
+
+      <div class="mt-6">
+        <button id="adminLogout" class="w-full px-3 py-2 rounded bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600">
+          <i class="fa-solid fa-right-from-bracket mr-2"></i> Logout
+        </button>
+      </div>
+    </aside>
+
+    <main class="flex-1 p-6 overflow-auto">
+      <div class="flex justify-between items-center mb-4">
+        <div></div>
+        <div class="flex items-center gap-3">
+          <label class="toggle-switch">
+            <input type="checkbox" id="darkModeToggleDashboardAdmin" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Return button -->
+      <button class="return-btn px-3 py-2 bg-blue-600 text-white rounded-full shadow mb-4">Return</button>
+
+      <!-- Contents -->
+      <div class="dashboard-content" data-section="overview">
+        <h2 class="text-2xl font-bold mb-4">Admin Overview</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="card rounded-xl p-4 shadow">
+            <h3 class="font-semibold mb-2">Hospital Occupancy</h3>
+            <div class="chart-container"><canvas id="adminOccupancyChart"></canvas></div>
+          </div>
+          <div class="card rounded-xl p-4 shadow">
+            <h3 class="font-semibold mb-2">Monthly Revenue</h3>
+            <div class="chart-container"><canvas id="adminRevenueChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div class="card p-4 rounded-lg">
+            <div class="text-sm text-gray-500">Doctors</div>
+            <div class="text-2xl font-bold" id="adminDoctorsCount">42</div>
+          </div>
+          <div class="card p-4 rounded-lg">
+            <div class="text-sm text-gray-500">Nurses</div>
+            <div class="text-2xl font-bold" id="adminNursesCount">128</div>
+          </div>
+          <div class="card p-4 rounded-lg">
+            <div class="text-sm text-gray-500">Patients</div>
+            <div class="text-2xl font-bold" id="adminPatientsCount">320</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-content hidden" data-section="patients">
+        <h2 class="text-2xl font-bold mb-4">Patients — Admin</h2>
+        <div class="card p-4 rounded-lg">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th class="px-3 py-2 text-left">Name</th>
+                  <th class="px-3 py-2 text-left">Age</th>
+                  <th class="px-3 py-2 text-left">Gender</th>
+                  <th class="px-3 py-2 text-left">Doctor</th>
+                  <th class="px-3 py-2 text-left">Appt Date</th>
+                  <th class="px-3 py-2 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminPatientsTbody">
+                <!-- populated by script.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-content hidden" data-section="billing">
+        <h2 class="text-2xl font-bold mb-4">Billing</h2>
+        <div class="card p-4 rounded-lg mb-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-3">
+              <div class="text-sm text-gray-500">Today's Revenue</div>
+              <div class="text-2xl font-bold" id="billingToday">$12,400</div>
+            </div>
+            <div class="p-3">
+              <div class="text-sm text-gray-500">Pending Bills</div>
+              <div class="text-2xl font-bold" id="billingPending">24</div>
+            </div>
+            <div class="p-3">
+              <div class="text-sm text-gray-500">This Month</div>
+              <div class="text-2xl font-bold" id="billingMonth">$210,000</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card p-4 rounded-lg">
+          <h3 class="font-semibold mb-2">Recent Transactions</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead>
+                <tr>
+                  <th class="px-3 py-2 text-left">Date</th>
+                  <th class="px-3 py-2 text-left">Patient</th>
+                  <th class="px-3 py-2 text-left">Amount</th>
+                  <th class="px-3 py-2 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody id="billingTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-content hidden" data-section="staff">
+        <h2 class="text-2xl font-bold mb-4">Staff</h2>
+        <div class="card p-4 rounded-lg">
+          <h3 class="font-semibold mb-2">Staff List</h3>
+          <ul id="staffList" class="space-y-2"></ul>
+          <hr class="my-4" />
+          <h3 class="font-semibold mb-2">Add Staff (Admin only)</h3>
+          <form id="addStaffForm" class="space-y-3 max-w-md">
+            <div>
+              <label class="block text-sm font-medium mb-1">Username</label>
+              <input type="text" id="staffUsername" name="username" required class="form-control w-full px-3 py-2 rounded border" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Password</label>
+              <input type="password" id="staffPassword" name="password" required class="form-control w-full px-3 py-2 rounded border" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Role</label>
+              <select id="staffRole" name="role" class="form-control w-full px-3 py-2 rounded border">
+                <option>Admin</option>
+                <option>Doctor</option>
+                <option>Nurse</option>
+                <option>Receptionist</option>
+              </select>
+            </div>
+            <div>
+              <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Add Staff</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+
+    </main>
+  </section>
+
+  <!-- ---------- DOCTOR DASHBOARD ---------- -->
+  <section id="doctor-dashboard" class="page-section hidden min-h-screen flex">
+    <aside class="w-64 bg-white/80 dark:bg-slate-800/90 p-4 border-r dark:border-slate-700">
+      <div class="mb-6 flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">Dr</div>
+        <div>
+          <div class="font-semibold">Dr. Smith</div>
+          <div class="text-xs text-gray-500 dark:text-gray-300">Cardiology</div>
+        </div>
+      </div>
+
+      <nav class="space-y-1">
+        <button class="doctor-side-btn w-full text-left" data-target="overview"> <i class="fa-solid fa-gauge-high mr-2"></i> Overview</button>
+        <button class="doctor-side-btn w-full text-left" data-target="patients"> <i class="fa-solid fa-user-doctor mr-2"></i> Patients</button>
+        <button class="doctor-side-btn w-full text-left" data-target="messages"> <i class="fa-solid fa-comment-dots mr-2"></i> Messages</button>
+      </nav>
+
+      <div class="mt-6">
+        <button id="doctorLogout" class="w-full px-3 py-2 rounded bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600">
+          <i class="fa-solid fa-right-from-bracket mr-2"></i> Logout
+        </button>
+      </div>
+    </aside>
+
+    <main class="flex-1 p-6 overflow-auto">
+      <div class="flex justify-between items-center mb-4">
+        <div></div>
+        <div class="flex items-center gap-3">
+          <label class="toggle-switch">
+            <input type="checkbox" id="darkModeToggleDashboardDoctor" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <button class="return-btn px-3 py-2 bg-green-600 text-white rounded-full shadow mb-4">Return</button>
+
+      <div class="dashboard-content" data-section="overview">
+        <h2 class="text-2xl font-bold mb-4">Doctor Overview</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="card p-4 rounded-lg">
+            <h3 class="font-semibold mb-2">Patient Statistics</h3>
+            <div class="chart-container"><canvas id="doctorPatientChart"></canvas></div>
+          </div>
+          <div class="card p-4 rounded-lg">
+            <h3 class="font-semibold mb-2">Treatment Outcomes</h3>
+            <div class="chart-container"><canvas id="doctorTreatmentChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-content hidden" data-section="patients">
+        <h2 class="text-2xl font-bold mb-4">Patient Files</h2>
+        <div class="card p-4 rounded-lg" id="doctorPatientsList"></div>
+      </div>
+
+      <div class="dashboard-content hidden" data-section="messages">
+        <h2 class="text-2xl font-bold mb-4">Messages</h2>
+        <div class="card p-4 rounded-lg">
+          <p class="text-sm">Simple internal messaging placeholder.</p>
+        </div>
+      </div>
+
+      <footer class="mt-8 text-sm text-gray-600 dark:text-gray-300">
+        <div class="card p-4 rounded-lg">
+          <div class="flex flex-col md:flex-row justify-between items-center">
+            <div>© 2025 MediSync Hospital Management System — All Rights Reserved</div>
+            <div class="flex gap-4">
+            
+            </div>
+          </div>
+        </div>
+      </footer>
+    </main>
+  </section>
+
+  <!-- ---------- NURSE DASHBOARD ---------- -->
+  <section id="nurse-dashboard" class="page-section hidden min-h-screen flex">
+    <aside class="w-64 bg-white/80 dark:bg-slate-800/90 p-4 border-r dark:border-slate-700">
+      <div class="mb-6 flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold">Nu</div>
+        <div>
+          <div class="font-semibold">Nurse Johnson</div>
+          <div class="text-xs text-gray-500 dark:text-gray-300">Ward A</div>
+        </div>
+      </div>
+
+      <nav class="space-y-1">
+        <button class="nurse-side-btn w-full text-left" data-target="overview"> <i class="fa-solid fa-gauge-high mr-2"></i> Overview</button>
+        <button class="nurse-side-btn w-full text-left" data-target="medications"> <i class="fa-solid fa-pills mr-2"></i> Medications</button>
+        <button class="nurse-side-btn w-full text-left" data-target="shifts"> <i class="fa-solid fa-clock mr-2"></i> Shifts</button>
+        <button class="nurse-side-btn w-full text-left" data-target="alerts"> <i class="fa-solid fa-bell mr-2"></i> Alerts</button>
+      </nav>
+
+      <div class="mt-6">
+        <button id="nurseLogout" class="w-full px-3 py-2 rounded bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600">
+          <i class="fa-solid fa-right-from-bracket mr-2"></i> Logout
+        </button>
+      </div>
+    </aside>
+
+    <main class="flex-1 p-6 overflow-auto">
+      <div class="flex justify-between items-center mb-4">
+        <div></div>
+        <div class="flex items-center gap-3">
+          <label class="toggle-switch">
+            <input type="checkbox" id="darkModeToggleDashboardNurse" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <button class="return-btn px-3 py-2 bg-purple-600 text-white rounded-full shadow mb-4">Return</button>
+
+      <div class="dashboard-content" data-section="overview">
+        <h2 class="text-2xl font-bold mb-4">Nurse Overview</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="card p-4 rounded-lg">
+            <h3 class="font-semibold mb-2">Patient Vital Trends</h3>
+            <div class="chart-container"><canvas id="nurseVitalsChart"></canvas></div>
+          </div>
+          <div class="card p-4 rounded-lg">
+            <h3 class="font-semibold mb-2">Medication Schedule</h3>
+            <div class="chart-container"><canvas id="nurseMedicationChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-content hidden" data-section="medications">
+        <h2 class="text-2xl font-bold mb-4">Medications</h2>
+        <div class="card p-4 rounded-lg">
+          <ul id="nurseMedList" class="space-y-2"></ul>
+        </div>
+      </div>
+
+      <div class="dashboard-content hidden" data-section="shifts">
+        <h2 class="text-2xl font-bold mb-4">Shifts</h2>
+        <div class="card p-4 rounded-lg">
+          <p class="text-sm">Shift schedule details and quick actions.</p>
+        </div>
+      </div>
+
+      <div class="dashboard-content hidden" data-section="alerts">
+        <h2 class="text-2xl font-bold mb-4">Alerts</h2>
+        <div class="card p-4 rounded-lg">
+          <ul id="nurseAlerts" class="space-y-2"></ul>
+        </div>
+      </div>
+
+    </main>
+  </section>
+
+  <!-- ---------- RECEPTIONIST DASHBOARD ---------- -->
+  <section id="receptionist-dashboard" class="page-section hidden min-h-screen flex">
+    <aside class="w-64 bg-white/80 dark:bg-slate-800/90 p-4 border-r dark:border-slate-700">
+      <div class="mb-6 flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold">Rc</div>
+        <div>
+          <div class="font-semibold">Reception</div>
+          <div class="text-xs text-gray-500 dark:text-gray-300">Front Desk</div>
+        </div>
+      </div>
+
+      <nav class="space-y-1">
+        <button class="reception-side-btn w-full text-left" data-target="overview"> <i class="fa-solid fa-gauge-high mr-2"></i> Overview</button>
+        <button class="reception-side-btn w-full text-left" data-target="appointments"> <i class="fa-solid fa-calendar-check mr-2"></i> Appointments</button>
+        <button class="reception-side-btn w-full text-left" data-target="registration"> <i class="fa-solid fa-user-plus mr-2"></i> Registration</button>
+        <button class="reception-side-btn w-full text-left" data-target="doctors"> <i class="fa-solid fa-user-md mr-2"></i> Doctors</button>
+      </nav>
+
+      <div class="mt-6">
+        <button id="receptionistLogout" class="w-full px-3 py-2 rounded bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600">
+          <i class="fa-solid fa-right-from-bracket mr-2"></i> Logout
+        </button>
+      </div>
+    </aside>
+
+    <main class="flex-1 p-6 overflow-auto">
+      <div class="flex justify-between items-center mb-4">
+        <div></div>
+        <div class="flex items-center gap-3">
+          <label class="toggle-switch">
+            <input type="checkbox" id="darkModeToggleDashboardReception" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <button class="return-btn px-3 py-2 bg-orange-600 text-white rounded-full shadow mb-4">Return</button>
+
+      <div class="dashboard-content" data-section="overview">
+        <h2 class="text-2xl font-bold mb-4">Reception Overview</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="card p-4 rounded-lg">
+            <h3 class="font-semibold mb-2">Daily Appointments</h3>
+            <div class="chart-container"><canvas id="receptionistAppointmentChart"></canvas></div>
+          </div>
+          <div class="card p-4 rounded-lg">
+            <h3 class="font-semibold mb-2">Registrations</h3>
+            <div class="chart-container"><canvas id="receptionistRegistrationChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-content hidden" data-section="appointments">
+        <h2 class="text-2xl font-bold mb-4">Appointments</h2>
+        <div class="card p-4 rounded-lg">
+          <table class="min-w-full" id="receptionAppointmentsTable">
+            <thead>
+              <tr>
+                <th class="px-3 py-2 text-left">Time</th>
+                <th class="px-3 py-2 text-left">Patient</th>
+                <th class="px-3 py-2 text-left">Doctor</th>
+                <th class="px-3 py-2 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody id="receptionAppointmentsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Receptionist: Registration (Add Patient Form) -->
+      <div class="dashboard-content hidden" data-section="registration">
+        <h2 class="text-2xl font-bold mb-4">Patient Registration</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+          <div class="card p-4 rounded-lg">
+            <form id="addPatientForm" class="space-y-3">
+              <div>
+                <label class="block text-sm font-medium mb-1">Full Name</label>
+                <input type="text" id="patientName" name="patientName" required class="form-control w-full px-3 py-2 rounded border" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium mb-1">Age</label>
+                <input type="number" id="patientAge" name="patientAge" required class="form-control w-full px-3 py-2 rounded border" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium mb-1">Gender</label>
+                <select id="patientGender" name="patientGender" required class="form-control w-full px-3 py-2 rounded border">
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium mb-1">Appointment Date</label>
+                <input type="datetime-local" id="appointmentDate" name="appointmentDate" required class="form-control w-full px-3 py-2 rounded border" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium mb-1">Assigned Doctor</label>
+                <select id="assignedDoctor" name="assignedDoctor" required class="form-control w-full px-3 py-2 rounded border">
+                  <option value="Dr. Miller">Dr. Miller</option>
+                  <option value="Dr. Chen">Dr. Chen</option>
+                  <option value="Dr. Patel">Dr. Patel</option>
+                </select>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Add Patient</button>
+                <button type="reset" class="px-4 py-2 bg-gray-200 rounded">Reset</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card p-4 rounded-lg">
+            <h3 class="font-semibold mb-2">Recent Registrations</h3>
+            <div class="overflow-x-auto">
+              <table class="min-w-full" id="receptionPatientsTable">
+                <thead>
+                  <tr>
+                    <th class="px-3 py-2 text-left">Name</th>
+                    <th class="px-3 py-2 text-left">Age</th>
+                    <th class="px-3 py-2 text-left">Gender</th>
+                    <th class="px-3 py-2 text-left">Appt</th>
+                    <th class="px-3 py-2 text-left">Doctor</th>
+                    <th class="px-3 py-2 text-left">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="patientTableBody">
+                  <!-- populated by script.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-content hidden" data-section="doctors">
+        <h2 class="text-2xl font-bold mb-4">Doctor Availability</h2>
+        <div class="card p-4 rounded-lg" id="receptionDoctorsList"></div>
+      </div>
+    </main>
+  </section>
+
+  <!-- Script -->
+  <script src="script.js"></script>
+</body>
+</html>

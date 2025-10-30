@@ -1,0 +1,213 @@
+/* === GLOBAL RESET === */
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.3s, color 0.3s;
+}
+
+body.light {
+  background: #f5f6fa;
+  color: #1f2937;
+}
+body.dark {
+  background: #0f172a;
+  color: #f1f5f9;
+}
+
+/* === ANIMATED BACKGROUND BLOBS === */
+.animated-bg {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: -1;
+}
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: blob-move 25s infinite alternate;
+}
+.blob:nth-child(1) {
+  width: 400px;
+  height: 400px;
+  background: #3b82f6;
+  top: -100px;
+  left: -100px;
+  animation-delay: 0s;
+}
+.blob:nth-child(2) {
+  width: 300px;
+  height: 300px;
+  background: #10b981;
+  top: 50%;
+  left: 20%;
+  animation-delay: 5s;
+}
+.blob:nth-child(3) {
+  width: 350px;
+  height: 350px;
+  background: #f59e0b;
+  bottom: -150px;
+  right: -150px;
+  animation-delay: 10s;
+}
+.blob:nth-child(4) {
+  width: 250px;
+  height: 250px;
+  background: #a855f7;
+  bottom: 20%;
+  left: 60%;
+  animation-delay: 15s;
+}
+@keyframes blob-move {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(80px, -60px) scale(1.2);
+  }
+}
+
+/* === CARD & COMPONENT BASE === */
+.card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(229, 231, 235, 0.4);
+  transition: background 0.3s, border 0.3s;
+}
+.dark .card {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(71, 85, 105, 0.5);
+}
+
+/* === SIDEBAR === */
+aside {
+  backdrop-filter: blur(8px);
+  transition: background 0.3s;
+}
+aside nav button {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  color: #1e293b;
+  transition: all 0.2s;
+}
+.dark aside nav button {
+  color: #f1f5f9;
+}
+aside nav button:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+aside nav button.active {
+  background: #3b82f6;
+  color: white;
+}
+
+/* === TABLES === */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+th,
+td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+th {
+  font-weight: 600;
+  background: rgba(243, 244, 246, 0.6);
+}
+.dark th {
+  background: rgba(51, 65, 85, 0.7);
+}
+tbody tr:nth-child(even) {
+  background: rgba(243, 244, 246, 0.4);
+}
+.dark tbody tr:nth-child(even) {
+  background: rgba(30, 41, 59, 0.6);
+}
+
+/* === FORMS === */
+.form-control {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #d1d5db;
+}
+.form-control:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+.dark .form-control {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+/* === CHART CONTAINER === */
+.chart-container {
+  position: relative;
+  height: 260px;
+}
+
+/* === DARK MODE TOGGLE SWITCH === */
+.toggle-switch {
+  position: relative;
+  width: 42px;
+  height: 22px;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #ccc;
+  border-radius: 22px;
+  transition: 0.3s;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+input:checked + .slider {
+  background-color: #3b82f6;
+}
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* === RETURN BUTTON === */
+.return-btn {
+  transition: transform 0.2s, background 0.3s;
+}
+.return-btn:hover {
+  transform: scale(1.05);
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  aside {
+    width: 200px;
+  }
+  .card {
+    font-size: 0.9rem;
+  }
+}
