@@ -1,4 +1,4 @@
-
+<?php
 /**
  * patients.php — Patient management endpoint for MediSync HMS.
  *
@@ -80,6 +80,93 @@ elseif ($method === "POST") {
         ], 500);
     }
 
+    $stmt->close();
+}
+
+elseif ($method === "PUT" || $method === "PATCH") {
+    // Only Receptionists and Admins can update patients
+    require_role(['Receptionist', 'Admin']);
+    $data = get_request_data();
+    $id = (int)($data["id"] ?? 0);
+    $name = trim($data["patientName"] ?? "");
+    $age = (int)($data["patientAge"] ?? 0);
+    $gender = $data["patientGender"] ?? "";
+    $doctor = $data["assignedDoctor"] ?? "";
+    $date = $data["appointmentDate"] ?? "";
+
+    if (!$id || !$name || !$age || !$gender || !$doctor) {
+        send_json([
+            "status" => "error",
+            "message" => "Missing required fields"
+        ], 400);
+        $conn->close();
+        exit;
+    }
+
+    $stmt = $conn->prepare("UPDATE patients SET name=?, age=?, gender=?, doctor=?, date=? WHERE id=?");
+    if (!$stmt) {
+        send_json([
+            "status" => "error",
+            "message" => "Server error preparing statement"
+        ], 500);
+        $conn->close();
+        exit;
+    }
+    $stmt->bind_param("sisssi", $name, $age, $gender, $doctor, $date, $id);
+
+    if ($stmt->execute()) {
+        send_json([
+            "status" => "success",
+            "message" => "Patient updated successfully"
+        ], 200);
+    } else {
+        send_json([
+            "status" => "error",
+            "message" => "Failed to update patient",
+            "error" => $stmt->error
+        ], 500);
+    }
+    $stmt->close();
+}
+
+elseif ($method === "DELETE") {
+    // Only Admins can delete patients
+    require_role(['Admin']);
+    $data = get_request_data();
+    $id = (int)($data["id"] ?? 0);
+
+    if (!$id) {
+        send_json([
+            "status" => "error",
+            "message" => "Patient ID required"
+        ], 400);
+        $conn->close();
+        exit;
+    }
+
+    $stmt = $conn->prepare("DELETE FROM patients WHERE id=?");
+    if (!$stmt) {
+        send_json([
+            "status" => "error",
+            "message" => "Server error preparing statement"
+        ], 500);
+        $conn->close();
+        exit;
+    }
+    $stmt->bind_param("i", $id);
+
+    if ($stmt->execute()) {
+        send_json([
+            "status" => "success",
+            "message" => "Patient deleted successfully"
+        ], 200);
+    } else {
+        send_json([
+            "status" => "error",
+            "message" => "Failed to delete patient",
+            "error" => $stmt->error
+        ], 500);
+    }
     $stmt->close();
 }
 

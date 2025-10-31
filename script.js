@@ -27,6 +27,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const sections = Array.from(document.querySelectorAll(".page-section"));
   const loginForm = document.getElementById("loginForm");
   const darkModeToggle = document.getElementById("darkModeToggle");
+  const darkToggleIds = [
+    "darkModeToggleDashboardAdmin",
+    "darkModeToggleDashboardDoctor",
+    "darkModeToggleDashboardNurse",
+    "darkModeToggleDashboardReception"
+  ];
+  const darkModeToggles = darkToggleIds
+    .map(id => document.getElementById(id))
+    .filter(Boolean);
   const htmlEl = document.documentElement;
   const bodyEl = document.body;
   const dashboards = Array.from(document.querySelectorAll("[id$='-dashboard']"));
@@ -77,19 +86,20 @@ document.addEventListener("DOMContentLoaded", () => {
    * Loads theme preference from localStorage and applies light/dark mode.
    */
   const savedTheme = localStorage.getItem("theme");
-  if (savedTheme === "dark") {
-    htmlEl.classList.add("dark");
-    bodyEl.classList.add("dark");
-    htmlEl.classList.remove("light");
-    bodyEl.classList.remove("light");
-    if (darkModeToggle) darkModeToggle.checked = true;
-  } else {
-    htmlEl.classList.add("light");
-    bodyEl.classList.add("light");
-    htmlEl.classList.remove("dark");
-    bodyEl.classList.remove("dark");
-    if (darkModeToggle) darkModeToggle.checked = false;
+  function setThemeState(isDark) {
+    if (isDark) {
+      htmlEl.classList.add("dark"); bodyEl.classList.add("dark");
+      htmlEl.classList.remove("light"); bodyEl.classList.remove("light");
+      localStorage.setItem("theme", "dark");
+    } else {
+      htmlEl.classList.add("light"); bodyEl.classList.add("light");
+      htmlEl.classList.remove("dark"); bodyEl.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+    if (darkModeToggle) darkModeToggle.checked = !!isDark;
+    darkModeToggles.forEach(t => { t.checked = !!isDark; });
   }
+  setThemeState(savedTheme === "dark");
 
   /**
    * Section Navigation
@@ -125,10 +135,20 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         // Load data when specific sections open
-        if (target === "patients") loadPatients();
-        if (target === "appointments") loadAppointments();
+        if (target === "patients") { loadPatients(); if (dashboardId === 'doctor-dashboard') loadDoctorPatients(); }
+        if (target === "appointments") { 
+          loadAppointments(); 
+          if (dashboardId === 'doctor-dashboard') loadDoctorAppointments(); 
+        }
         if (target === "staff") loadStaff();
         if (target === "billing") loadBilling();
+        if (target === "prescriptions" && dashboardId === 'doctor-dashboard') { loadDoctorPrescriptions(); populateDoctorPatientSelects(); }
+        if (target === "notes" && dashboardId === 'doctor-dashboard') { loadDoctorNotes(); populateDoctorPatientSelects(); }
+        if (target === "messages" && dashboardId === 'doctor-dashboard') renderDoctorMessages();
+        if (target === "medications" && dashboardId === 'nurse-dashboard') loadNurseData();
+        if (target === "alerts" && dashboardId === 'nurse-dashboard') loadNurseData();
+        if (target === "doctors" && dashboardId === 'receptionist-dashboard') loadReceptionDoctors();
+        if (target === "registration" && dashboardId === 'receptionist-dashboard') { populateDoctorDropdowns(); loadPatients(); }
         if (target === "overview") {
           // render charts for role (admin/doctor/nurse/receptionist)
           const role = dashboardId.replace("-dashboard", "");
@@ -169,20 +189,343 @@ document.addEventListener("DOMContentLoaded", () => {
     if (role === "doctor") {
       createChartSafe(document.getElementById("doctorPatientChart"), {
         type: "bar",
-        data: { labels: ["Mon","Tue","Wed","Thu","Fri"], datasets: [{ data: [8,10,6,9,7] }] }
+        data: { labels: ["Mon","Tue","Wed","Thu","Fri"], datasets: [{ label: "Patients Seen", data: [8,10,6,9,7] }] }
+      });
+      createChartSafe(document.getElementById("doctorTreatmentChart"), {
+        type: "line",
+        data: {
+          labels: ["Jan","Feb","Mar","Apr","May","Jun"],
+          datasets: [
+            { label: "Successful", data: [85,88,90,92,91,93] },
+            { label: "Complications", data: [5,4,3,4,3,2] }
+          ]
+        }
       });
     }
     if (role === "nurse") {
       createChartSafe(document.getElementById("nurseVitalsChart"), {
         type: "line",
-        data: { labels: ["6AM","9AM","12PM","3PM","6PM"], datasets: [{ data: [98,99,100,98,97] }] }
+        data: { labels: ["6AM","9AM","12PM","3PM","6PM"], datasets: [{ label: "Avg SpO2", data: [98,99,100,98,97] }] }
+      });
+      createChartSafe(document.getElementById("nurseMedicationChart"), {
+        type: "bar",
+        data: { labels: ["Ward A","Ward B","Ward C"], datasets: [{ label: "Scheduled Doses", data: [12,9,7] }] }
       });
     }
     if (role === "receptionist") {
       createChartSafe(document.getElementById("receptionistAppointmentChart"), {
         type: "bar",
-        data: { labels: ["8AM","10AM","12PM","2PM","4PM"], datasets: [{ data: [5,8,4,6,7] }] }
+        data: { labels: ["8AM","10AM","12PM","2PM","4PM"], datasets: [{ label: "Appointments", data: [5,8,4,6,7] }] }
       });
+      createChartSafe(document.getElementById("receptionistRegistrationChart"), {
+        type: "line",
+        data: { labels: ["Mon","Tue","Wed","Thu","Fri"], datasets: [{ label: "Registrations", data: [6,9,7,8,10] }] }
+      });
+    }
+  }
+
+  // Doctor: Patients list (filtered by assigned doctor)
+  async function loadDoctorPatients() {
+    const container = document.getElementById('doctorPatientsList');
+    if (!container) return;
+    container.innerHTML = '<div>Loading...</div>';
+    try {
+      const username = localStorage.getItem('username') || '';
+      const patients = await safeFetchJSON(`${API_BASE}/patients.php`);
+      const mine = Array.isArray(patients) ? patients.filter(p => String(p.doctor || '').toLowerCase() === username.toLowerCase()) : [];
+      if (mine.length === 0) {
+        container.innerHTML = '<div class="text-sm">No patients assigned.</div>';
+        return;
+      }
+      const rows = mine.map(p => `<tr><td class=\"px-3 py-2\">${escapeHtml(p.name)}</td><td class=\"px-3 py-2\">${escapeHtml(p.gender)}</td><td class=\"px-3 py-2\">${escapeHtml(String(p.age))}</td><td class=\"px-3 py-2\">${escapeHtml(p.date || '')}</td></tr>`).join('');
+      container.innerHTML = `<div class=\"overflow-x-auto\"><table class=\"min-w-full\"><thead><tr><th class=\"px-3 py-2 text-left\">Name</th><th class=\"px-3 py-2 text-left\">Gender</th><th class=\"px-3 py-2 text-left\">Age</th><th class=\"px-3 py-2 text-left\">Appt Date</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    } catch (err) {
+      console.error('loadDoctorPatients error:', err);
+      container.innerHTML = '<div class=\"text-sm text-red-600\">Failed to load patients.</div>';
+    }
+  }
+
+  // Doctor: Appointments filtered by doctor
+  async function loadDoctorAppointments() {
+    const tbody = document.getElementById('doctorAppointmentsTbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+    try {
+      const username = localStorage.getItem('username') || '';
+      const appointments = await safeFetchJSON(`${API_BASE}/appointments.php`);
+      const mine = Array.isArray(appointments) ? appointments.filter(a => String(a.doctor || '').toLowerCase() === username.toLowerCase()) : [];
+      if (mine.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5">No appointments scheduled.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = '';
+      mine.forEach(a => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="px-3 py-2">${escapeHtml(a.date || '')}</td>
+          <td class="px-3 py-2">${escapeHtml(a.time || '')}</td>
+          <td class="px-3 py-2">${escapeHtml(a.patient_name || '')}</td>
+          <td class="px-3 py-2">${escapeHtml(a.status || '')}</td>
+          <td class="px-3 py-2">
+            <button class="px-2 py-1 text-xs rounded bg-blue-600 text-white" onclick="alert('View appointment details')">View</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    } catch (err) {
+      console.error('loadDoctorAppointments error:', err);
+      tbody.innerHTML = '<tr><td colspan="5">Failed to load appointments.</td></tr>';
+    }
+  }
+
+  // Populate patient selects for doctor forms (prescriptions, notes)
+  async function populateDoctorPatientSelects() {
+    try {
+      const username = localStorage.getItem('username') || '';
+      const patients = await safeFetchJSON(`${API_BASE}/patients.php`);
+      const mine = Array.isArray(patients) ? patients.filter(p => String(p.doctor || '').toLowerCase() === username.toLowerCase()) : [];
+      const options = mine.length > 0 
+        ? mine.map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('')
+        : '<option value="">No patients assigned</option>';
+      
+      const prescriptionSelect = document.getElementById('prescriptionPatient');
+      const noteSelect = document.getElementById('notePatient');
+      
+      if (prescriptionSelect) prescriptionSelect.innerHTML = '<option value="">Select patient...</option>' + options;
+      if (noteSelect) noteSelect.innerHTML = '<option value="">Select patient...</option>' + options;
+    } catch (err) {
+      console.error('Error loading patients for selects:', err);
+    }
+  }
+
+  // Doctor: Prescriptions (stored in localStorage for demo)
+  async function loadDoctorPrescriptions() {
+    const container = document.getElementById('doctorPrescriptionsList');
+    if (!container) return;
+    container.innerHTML = 'Loading...';
+    
+    // Load from localStorage (would be API in production)
+    const stored = localStorage.getItem('doctor_prescriptions') || '[]';
+    const prescriptions = JSON.parse(stored);
+    
+    if (prescriptions.length === 0) {
+      container.innerHTML = '<p class="text-sm text-gray-600">No active prescriptions.</p>';
+      return;
+    }
+    
+    const list = prescriptions.map((p, idx) => `
+      <div class="p-3 border rounded-lg mb-2 flex justify-between items-center">
+        <div>
+          <div class="font-semibold">${escapeHtml(p.patient)}</div>
+          <div class="text-sm text-gray-600">${escapeHtml(p.medication)} — ${escapeHtml(p.dosage)}</div>
+          <div class="text-xs text-gray-500">Date: ${escapeHtml(p.date)}</div>
+        </div>
+        <button class="px-2 py-1 text-xs rounded bg-red-600 text-white" onclick="removePrescription(${idx})">Remove</button>
+      </div>
+    `).join('');
+    
+    container.innerHTML = list;
+  }
+
+  // Doctor: Patient Notes (stored in localStorage for demo)
+  async function loadDoctorNotes() {
+    const container = document.getElementById('doctorNotesList');
+    if (!container) return;
+    container.innerHTML = 'Loading...';
+    
+    // Load from localStorage (would be API in production)
+    const stored = localStorage.getItem('doctor_notes') || '[]';
+    const allNotes = JSON.parse(stored);
+    const notes = [...allNotes].reverse(); // Most recent first (copy array to avoid mutating)
+    
+    if (notes.length === 0) {
+      container.innerHTML = '<p class="text-sm text-gray-600">No notes recorded.</p>';
+      return;
+    }
+    
+    const list = notes.map((n, idx) => {
+      // Find original index in non-reversed array
+      const originalIdx = allNotes.length - 1 - idx;
+      return `
+      <div class="p-3 border rounded-lg mb-2">
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <div class="font-semibold">${escapeHtml(n.patient)}</div>
+            <div class="text-xs text-gray-500">${escapeHtml(n.date)}</div>
+          </div>
+          <button class="px-2 py-1 text-xs rounded bg-red-600 text-white" onclick="removeNote(${originalIdx})">Delete</button>
+        </div>
+        <div class="text-sm">${escapeHtml(n.content).replace(/\n/g, '<br>')}</div>
+      </div>
+    `;
+    }).join('');
+    
+    container.innerHTML = list;
+  }
+
+  // Doctor: Enhanced messages feed
+  function renderDoctorMessages() {
+    const container = document.getElementById('doctorMessagesList');
+    if (!container) return;
+    const messages = [
+      { from: 'Admin', text: 'Department meeting at 4 PM today in Conference Room A.', time: '2 hours ago', type: 'info' },
+      { from: 'Nurse Anne', text: 'Patient Jane Roe updated vitals. BP: 120/80, Pulse: 72.', time: '1 hour ago', type: 'patient' },
+      { from: 'Reception', text: 'New patient registration: Samuel Kamau assigned to you.', time: '30 mins ago', type: 'new' }
+    ];
+    const items = messages.map(m => `
+      <div class="p-3 border rounded-lg mb-2">
+        <div class="flex justify-between items-start mb-1">
+          <span class="font-semibold">${escapeHtml(m.from)}</span>
+          <span class="text-xs text-gray-500">${escapeHtml(m.time)}</span>
+        </div>
+        <div class="text-sm">${escapeHtml(m.text)}</div>
+      </div>
+    `).join('');
+    container.innerHTML = items || '<p class="text-sm text-gray-600">No messages.</p>';
+  }
+
+  // Prescription form handler
+  const prescriptionForm = document.getElementById('prescriptionForm');
+  if (prescriptionForm) {
+    prescriptionForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const stored = localStorage.getItem('doctor_prescriptions') || '[]';
+      const prescriptions = JSON.parse(stored);
+      prescriptions.push({
+        patient: document.getElementById('prescriptionPatient').value,
+        medication: document.getElementById('prescriptionMedication').value,
+        dosage: document.getElementById('prescriptionDosage').value,
+        date: new Date().toISOString().split('T')[0]
+      });
+      localStorage.setItem('doctor_prescriptions', JSON.stringify(prescriptions));
+      prescriptionForm.reset();
+      await loadDoctorPrescriptions();
+      alert('Prescription added successfully');
+    });
+  }
+
+  // Patient note form handler
+  const patientNoteForm = document.getElementById('patientNoteForm');
+  if (patientNoteForm) {
+    patientNoteForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const stored = localStorage.getItem('doctor_notes') || '[]';
+      const notes = JSON.parse(stored);
+      notes.push({
+        patient: document.getElementById('notePatient').value,
+        date: document.getElementById('noteDate').value || new Date().toISOString().split('T')[0],
+        content: document.getElementById('noteContent').value
+      });
+      localStorage.setItem('doctor_notes', JSON.stringify(notes));
+      patientNoteForm.reset();
+      await loadDoctorNotes();
+      alert('Note saved successfully');
+    });
+  }
+
+  // Helper functions for removing prescriptions/notes
+  window.removePrescription = function(idx) {
+    if (!confirm('Remove this prescription?')) return;
+    const stored = localStorage.getItem('doctor_prescriptions') || '[]';
+    const prescriptions = JSON.parse(stored);
+    prescriptions.splice(idx, 1);
+    localStorage.setItem('doctor_prescriptions', JSON.stringify(prescriptions));
+    loadDoctorPrescriptions();
+  };
+
+  window.removeNote = function(idx) {
+    if (!confirm('Delete this note?')) return;
+    const stored = localStorage.getItem('doctor_notes') || '[]';
+    const notes = JSON.parse(stored);
+    notes.splice(idx, 1);
+    localStorage.setItem('doctor_notes', JSON.stringify(notes));
+    loadDoctorNotes();
+  };
+
+  // Nurse: medications, alerts placeholders
+  async function loadNurseData() {
+    const medsEl = document.getElementById('nurseMedList');
+    const alertsEl = document.getElementById('nurseAlerts');
+    if (medsEl) {
+      const meds = [
+        { patient: 'John Doe', drug: 'Amoxicillin 500mg', time: '10:00' },
+        { patient: 'Jane Roe', drug: 'Metformin 850mg', time: '12:00' }
+      ];
+      medsEl.innerHTML = meds.map(m => `<li class=\"flex justify-between\"><span>${escapeHtml(m.patient)}</span><span class=\"text-sm text-gray-600\">${escapeHtml(m.drug)} — ${escapeHtml(m.time)}</span></li>`).join('');
+    }
+    if (alertsEl) {
+      const alerts = [
+        { text: 'Ward A — Low stock of saline.' },
+        { text: 'Patient Kelvin — Elevated BP, check at 14:00.' }
+      ];
+      alertsEl.innerHTML = alerts.map(a => `<li>${escapeHtml(a.text)}</li>`).join('');
+    }
+  }
+
+  // Populate doctor dropdowns from staff API
+  async function populateDoctorDropdowns() {
+    try {
+      const staff = await safeFetchJSON(`${API_BASE}/staff.php`);
+      const doctors = Array.isArray(staff) ? staff.filter(s => String(s.role).toLowerCase() === 'doctor') : [];
+      const options = doctors.length > 0 
+        ? doctors.map(d => `<option value="${escapeHtml(d.username)}">${escapeHtml(d.username)}</option>`).join('')
+        : '<option value="">No doctors available</option>';
+      
+      const addDoctorSelect = document.getElementById('assignedDoctor');
+      const editDoctorSelect = document.getElementById('editAssignedDoctor');
+      
+      if (addDoctorSelect) {
+        addDoctorSelect.innerHTML = options;
+      }
+      if (editDoctorSelect) {
+        editDoctorSelect.innerHTML = options;
+      }
+    } catch (err) {
+      console.error('Error loading doctors for dropdowns:', err);
+      const addDoctorSelect = document.getElementById('assignedDoctor');
+      const editDoctorSelect = document.getElementById('editAssignedDoctor');
+      if (addDoctorSelect) addDoctorSelect.innerHTML = '<option value="">Failed to load doctors</option>';
+      if (editDoctorSelect) editDoctorSelect.innerHTML = '<option value="">Failed to load doctors</option>';
+    }
+  }
+
+  // Receptionist: list available doctors with details
+  async function loadReceptionDoctors() {
+    const el = document.getElementById('receptionDoctorsList');
+    if (!el) return;
+    el.innerHTML = 'Loading...';
+    try {
+      const staff = await safeFetchJSON(`${API_BASE}/staff.php`);
+      const doctors = Array.isArray(staff) ? staff.filter(s => String(s.role).toLowerCase() === 'doctor') : [];
+      if (doctors.length === 0) { 
+        el.innerHTML = '<p class="text-sm text-gray-600">No doctors available. Admin can add doctors in the Staff section.</p>'; 
+        return; 
+      }
+      
+      // Get patient counts for each doctor
+      const patients = await safeFetchJSON(`${API_BASE}/patients.php`);
+      const patientCounts = {};
+      if (Array.isArray(patients)) {
+        patients.forEach(p => {
+          const doc = p.doctor || '';
+          patientCounts[doc] = (patientCounts[doc] || 0) + 1;
+        });
+      }
+      
+      const doctorCards = doctors.map(d => {
+        const count = patientCounts[d.username] || 0;
+        return `
+          <div class="p-3 border rounded-lg mb-2">
+            <div class="font-semibold">${escapeHtml(d.username)}</div>
+            <div class="text-sm text-gray-600">Patients assigned: ${count}</div>
+          </div>
+        `;
+      }).join('');
+      
+      el.innerHTML = `<div class="space-y-2">${doctorCards}</div>`;
+    } catch (err) {
+      console.error('loadReceptionDoctors error:', err);
+      el.innerHTML = '<p class="text-sm text-red-600">Failed to load doctors.</p>';
     }
   }
 
@@ -225,16 +568,12 @@ document.addEventListener("DOMContentLoaded", () => {
    * Updates theme and localStorage based on user selection.
    */
   darkModeToggle?.addEventListener("change", (e) => {
-    const isDark = e.target.checked;
-    if (isDark) {
-      htmlEl.classList.add("dark"); bodyEl.classList.add("dark");
-      htmlEl.classList.remove("light"); bodyEl.classList.remove("light");
-      localStorage.setItem("theme", "dark");
-    } else {
-      htmlEl.classList.add("light"); bodyEl.classList.add("light");
-      htmlEl.classList.remove("dark"); bodyEl.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
+    setThemeState(e.target.checked);
+  });
+  darkModeToggles.forEach(toggle => {
+    toggle.addEventListener("change", (e) => {
+      setThemeState(e.target.checked);
+    });
   });
 
   /**
@@ -257,30 +596,97 @@ document.addEventListener("DOMContentLoaded", () => {
    * Loads patient data and handles patient addition via API.
    */
   async function loadPatients() {
-    const tbody = document.getElementById("patientTableBody");
-    if (!tbody) return;
-    tbody.innerHTML = "<tr><td colspan='5'>Loading...</td></tr>";
+    const recentTbody = document.getElementById("patientTableBody"); // Receptionist recent registrations
+    const adminTbody = document.getElementById("adminPatientsTbody"); // Admin patients list
+    if (!recentTbody && !adminTbody) return;
+    if (recentTbody) recentTbody.innerHTML = "<tr><td colspan='6'>Loading...</td></tr>";
+    if (adminTbody) adminTbody.innerHTML = "<tr><td colspan='6'>Loading...</td></tr>";
     try {
       const patients = await safeFetchJSON(`${API_BASE}/patients.php`);
       if (!Array.isArray(patients)) {
-        tbody.innerHTML = "<tr><td colspan='5'>No patients or invalid response</td></tr>";
+        if (recentTbody) recentTbody.innerHTML = "<tr><td colspan='6'>No patients or invalid response</td></tr>";
+        if (adminTbody) adminTbody.innerHTML = "<tr><td colspan='6'>No patients or invalid response</td></tr>";
         return;
       }
-      tbody.innerHTML = "";
-      patients.forEach(p => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${escapeHtml(p.name || "")}</td>
-          <td>${escapeHtml(String(p.age || ""))}</td>
-          <td>${escapeHtml(p.gender || "")}</td>
-          <td>${escapeHtml(p.doctor || p.contact || "")}</td>
-          <td>${escapeHtml(p.date || p.address || "")}</td>
-        `;
-        tbody.appendChild(row);
-      });
+      if (recentTbody) {
+        recentTbody.innerHTML = "";
+        patients.forEach(p => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${escapeHtml(p.name || "")}</td>
+            <td>${escapeHtml(String(p.age || ""))}</td>
+            <td>${escapeHtml(p.gender || "")}</td>
+            <td>${escapeHtml(p.date || "")}</td>
+            <td>${escapeHtml(p.doctor || "")}</td>
+            <td>
+              <div class="flex gap-2">
+                <button class="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700" data-action="view" data-id="${p.id}">View</button>
+                <button class="px-2 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700" data-action="edit" data-id="${p.id}">Edit</button>
+                <button class="px-2 py-1 text-xs rounded bg-amber-500 text-white hover:bg-amber-600" data-action="reschedule" data-id="${p.id}">Reschedule</button>
+              </div>
+            </td>
+          `;
+          row.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const action = btn.getAttribute('data-action');
+              const pid = btn.getAttribute('data-id');
+              const patient = patients.find(pt => pt.id == pid);
+              if (!patient) return;
+              if (action === 'view') {
+                showPatientViewModal(patient);
+              } else if (action === 'edit') {
+                showPatientEditModal(patient);
+              } else if (action === 'reschedule') {
+                handleReschedule(patient);
+              }
+            });
+          });
+          recentTbody.appendChild(row);
+        });
+      }
+      if (adminTbody) {
+        adminTbody.innerHTML = "";
+        patients.forEach(p => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${escapeHtml(p.name || "")}</td>
+            <td>${escapeHtml(String(p.age || ""))}</td>
+            <td>${escapeHtml(p.gender || "")}</td>
+            <td>${escapeHtml(p.doctor || "")}</td>
+            <td>${escapeHtml(p.date || "")}</td>
+            <td>
+              <div class="flex gap-2">
+                <button class="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700" data-action="view" data-id="${p.id}">View</button>
+                <button class="px-2 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700" data-action="edit" data-id="${p.id}">Edit</button>
+                <button class="px-2 py-1 text-xs rounded bg-amber-500 text-white hover:bg-amber-600" data-action="reschedule" data-id="${p.id}">Reschedule</button>
+                <button class="px-2 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700" data-action="delete" data-id="${p.id}">Delete</button>
+              </div>
+            </td>
+          `;
+          row.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const action = btn.getAttribute('data-action');
+              const pid = btn.getAttribute('data-id');
+              const patient = patients.find(pt => pt.id == pid);
+              if (!patient) return;
+              if (action === 'view') {
+                showPatientViewModal(patient);
+              } else if (action === 'edit') {
+                showPatientEditModal(patient);
+              } else if (action === 'reschedule') {
+                handleReschedule(patient);
+              } else if (action === 'delete') {
+                handleDeletePatient(patient);
+              }
+            });
+          });
+          adminTbody.appendChild(row);
+        });
+      }
     } catch (err) {
       console.error("loadPatients error:", err);
-      tbody.innerHTML = "<tr><td colspan='5'>Failed to load patients.</td></tr>";
+      if (recentTbody) recentTbody.innerHTML = "<tr><td colspan='6'>Failed to load patients.</td></tr>";
+      if (adminTbody) adminTbody.innerHTML = "<tr><td colspan='6'>Failed to load patients.</td></tr>";
     }
   }
 
@@ -316,67 +722,87 @@ document.addEventListener("DOMContentLoaded", () => {
    * Loads data for appointments, staff, and billing sections via API endpoints.
    */
   async function loadAppointments() {
-    const container = document.querySelector("#appointmentsTableBody");
+    const container = document.querySelector("#receptionAppointmentsTbody");
     if (!container) return;
-    container.innerHTML = "<tr><td colspan='5'>Loading...</td></tr>";
+    container.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
     try {
       const appointments = await safeFetchJSON(`${API_BASE}/appointments.php`);
       container.innerHTML = "";
       if (!Array.isArray(appointments) || appointments.length === 0) {
-        container.innerHTML = "<tr><td colspan='5'>No appointments</td></tr>";
+        container.innerHTML = "<tr><td colspan='4'>No appointments</td></tr>";
         return;
       }
       appointments.forEach(a => {
         const row = document.createElement("tr");
         row.innerHTML = `
+          <td>${escapeHtml(a.time || "")}</td>
           <td>${escapeHtml(a.patient_name || a.patient || "")}</td>
           <td>${escapeHtml(a.doctor || "")}</td>
-          <td>${escapeHtml(a.date || "")}</td>
-          <td>${escapeHtml(a.time || "")}</td>
           <td>${escapeHtml(a.status || "")}</td>
         `;
         container.appendChild(row);
       });
     } catch (err) {
       console.error("loadAppointments error:", err);
-      container.innerHTML = "<tr><td colspan='5'>Failed to load appointments.</td></tr>";
+      container.innerHTML = "<tr><td colspan='4'>Failed to load appointments.</td></tr>";
     }
   }
 
   async function loadStaff() {
-    const container = document.querySelector("#staffTableBody");
     const listEl = document.querySelector('#staffList');
-    if (!container) return;
-    container.innerHTML = "<tr><td colspan='3'>Loading...</td></tr>";
+    const elAdmin = document.getElementById('staffListAdmin');
+    const elDoctor = document.getElementById('staffListDoctor');
+    const elNurse = document.getElementById('staffListNurse');
+    const elReception = document.getElementById('staffListReceptionist');
+    if (listEl) listEl.innerHTML = '<li>Loading...</li>';
+    if (elAdmin) elAdmin.innerHTML = 'Loading...';
+    if (elDoctor) elDoctor.innerHTML = 'Loading...';
+    if (elNurse) elNurse.innerHTML = 'Loading...';
+    if (elReception) elReception.innerHTML = 'Loading...';
     try {
       const staff = await safeFetchJSON(`${API_BASE}/staff.php`);
-      container.innerHTML = "";
-      if (!Array.isArray(staff) || staff.length === 0) {
-        container.innerHTML = "<tr><td colspan='3'>No staff</td></tr>";
-        if (listEl) listEl.innerHTML = '<li>No staff</li>';
-        return;
-      }
-      staff.forEach(s => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${escapeHtml(s.username || "")}</td>
-          <td>${escapeHtml(s.role || "")}</td>
-          <td><button class="btn small">View</button></td>
-        `;
-        container.appendChild(row);
-      });
       if (listEl) {
         listEl.innerHTML = '';
-        staff.forEach(s => {
-          const li = document.createElement('li');
-          li.className = 'flex justify-between items-center';
-          li.innerHTML = `<span>${escapeHtml(s.username)} — ${escapeHtml(s.role)}</span>`;
-          listEl.appendChild(li);
-        });
+        if (!Array.isArray(staff) || staff.length === 0) {
+          listEl.innerHTML = '<li>No staff</li>';
+        } else {
+          staff.forEach(s => {
+            const li = document.createElement('li');
+            li.className = 'flex justify-between items-center';
+            li.innerHTML = `<span>${escapeHtml(s.username)} — ${escapeHtml(s.role)}</span>`;
+            listEl.appendChild(li);
+          });
+        }
+      }
+      if (Array.isArray(staff)) {
+        const byRole = staff.reduce((acc, s) => {
+          const r = String(s.role || '').toLowerCase();
+          (acc[r] = acc[r] || []).push(s);
+          return acc;
+        }, {});
+        const render = (arr, el) => {
+          if (!el) return;
+          if (!arr || arr.length === 0) { el.innerHTML = '<li>No staff</li>'; return; }
+          el.innerHTML = '';
+          arr.forEach(s => {
+            const li = document.createElement('li');
+            li.className = 'flex justify-between items-center';
+            li.innerHTML = `<span>${escapeHtml(s.username)} — ${escapeHtml(s.role)}</span>`;
+            el.appendChild(li);
+          });
+        };
+        render(byRole['admin'], elAdmin);
+        render(byRole['doctor'], elDoctor);
+        render(byRole['nurse'], elNurse);
+        render(byRole['receptionist'], elReception);
       }
     } catch (err) {
       console.error("loadStaff error:", err);
-      container.innerHTML = "<tr><td colspan='3'>Failed to load staff.</td></tr>";
+      if (listEl) listEl.innerHTML = '<li>Failed to load staff.</li>';
+      if (elAdmin) elAdmin.innerHTML = 'Failed to load.';
+      if (elDoctor) elDoctor.innerHTML = 'Failed to load.';
+      if (elNurse) elNurse.innerHTML = 'Failed to load.';
+      if (elReception) elReception.innerHTML = 'Failed to load.';
     }
   }
 
@@ -391,6 +817,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (data && data.status === 'success') {
           addStaffForm.reset();
           await loadStaff();
+          // If a doctor was added, refresh doctor dropdowns
+          const roleSelect = document.getElementById('staffRole');
+          if (roleSelect && roleSelect.value === 'Doctor') {
+            await populateDoctorDropdowns();
+          }
           alert('Staff added');
         } else {
           alert(data.message || 'Failed to add staff');
@@ -403,7 +834,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadBilling() {
-    const container = document.querySelector("#billingTableBody");
+    const container = document.querySelector("#billingTbody");
     if (!container) return;
     container.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
     try {
@@ -427,6 +858,123 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("loadBilling error:", err);
       container.innerHTML = "<tr><td colspan='4'>Failed to load billing.</td></tr>";
     }
+  }
+
+  /**
+   * Patient Action Handlers
+   * Functions to handle view, edit, delete, and reschedule actions
+   */
+  function showPatientViewModal(patient) {
+    const modal = document.getElementById('patientViewModal');
+    const content = document.getElementById('patientViewContent');
+    content.innerHTML = `
+      <p><strong>Name:</strong> ${escapeHtml(patient.name || '')}</p>
+      <p><strong>Age:</strong> ${escapeHtml(String(patient.age || ''))}</p>
+      <p><strong>Gender:</strong> ${escapeHtml(patient.gender || '')}</p>
+      <p><strong>Assigned Doctor:</strong> ${escapeHtml(patient.doctor || '')}</p>
+      <p><strong>Appointment Date:</strong> ${escapeHtml(patient.date || '')}</p>
+    `;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function showPatientEditModal(patient) {
+    const modal = document.getElementById('patientEditModal');
+    document.getElementById('editPatientId').value = patient.id || '';
+    document.getElementById('editPatientName').value = patient.name || '';
+    document.getElementById('editPatientAge').value = patient.age || '';
+    document.getElementById('editPatientGender').value = patient.gender || 'Male';
+    document.getElementById('editAppointmentDate').value = patient.date || '';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    // Populate doctor dropdown and set selected value
+    populateDoctorDropdowns().then(() => {
+      document.getElementById('editAssignedDoctor').value = patient.doctor || '';
+    });
+  }
+
+  async function handleDeletePatient(patient) {
+    if (!confirm(`Are you sure you want to delete patient "${patient.name}"?`)) return;
+    try {
+      const data = await safeFetchJSON(`${API_BASE}/patients.php`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: patient.id })
+      });
+      if (data.status === 'success') {
+        alert('Patient deleted successfully');
+        await loadPatients();
+      } else {
+        alert(data.message || 'Failed to delete patient');
+      }
+    } catch (err) {
+      console.error('Error deleting patient:', err);
+      alert('Error deleting patient. Check console for details.');
+    }
+  }
+
+  async function handleReschedule(patient) {
+    const newDate = prompt('Enter new appointment date (YYYY-MM-DD):', patient.date || '');
+    if (!newDate) return;
+    try {
+      const data = await safeFetchJSON(`${API_BASE}/patients.php`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: patient.id,
+          patientName: patient.name,
+          patientAge: patient.age,
+          patientGender: patient.gender,
+          assignedDoctor: patient.doctor,
+          appointmentDate: newDate
+        })
+      });
+      if (data.status === 'success') {
+        alert('Appointment rescheduled successfully');
+        await loadPatients();
+      } else {
+        alert(data.message || 'Failed to reschedule appointment');
+      }
+    } catch (err) {
+      console.error('Error rescheduling:', err);
+      alert('Error rescheduling appointment. Check console for details.');
+    }
+  }
+
+  // Edit form submission
+  const patientEditForm = document.getElementById('patientEditForm');
+  if (patientEditForm) {
+    patientEditForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('editPatientId').value;
+      const formData = {
+        id: id,
+        patientName: document.getElementById('editPatientName').value,
+        patientAge: document.getElementById('editPatientAge').value,
+        patientGender: document.getElementById('editPatientGender').value,
+        assignedDoctor: document.getElementById('editAssignedDoctor').value,
+        appointmentDate: document.getElementById('editAppointmentDate').value
+      };
+      try {
+        const data = await safeFetchJSON(`${API_BASE}/patients.php`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        if (data.status === 'success') {
+          const modal = document.getElementById('patientEditModal');
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          alert('Patient updated successfully');
+          await loadPatients();
+        } else {
+          alert(data.message || 'Failed to update patient');
+        }
+      } catch (err) {
+        console.error('Error updating patient:', err);
+        alert('Error updating patient. Check console for details.');
+      }
+    });
   }
 
   /**

@@ -47,8 +47,8 @@ if ($method === 'POST') {
   exit;
 }
 
-// Default: GET — list staff (Admin only)
-require_role('Admin');
+// Default: GET — list staff (Admin and Receptionist)
+require_role(['Admin', 'Receptionist']);
 $res = $conn->query("SELECT id, username, role FROM staff ORDER BY id ASC");
 if ($res === false) {
   send_json([

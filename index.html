@@ -240,12 +240,9 @@
 
       <div class="dashboard-content hidden" data-section="staff">
         <h2 class="text-2xl font-bold mb-4">Staff</h2>
-        <div class="card p-4 rounded-lg">
-          <h3 class="font-semibold mb-2">Staff List</h3>
-          <ul id="staffList" class="space-y-2"></ul>
-          <hr class="my-4" />
-          <h3 class="font-semibold mb-2">Add Staff (Admin only)</h3>
-          <form id="addStaffForm" class="space-y-3 max-w-md">
+        <div class="card p-4 rounded-lg mb-4">
+          <h3 class="font-semibold mb-3">Add Staff (Admin only)</h3>
+          <form id="addStaffForm" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
             <div>
               <label class="block text-sm font-medium mb-1">Username</label>
               <input type="text" id="staffUsername" name="username" required class="form-control w-full px-3 py-2 rounded border" />
@@ -268,6 +265,24 @@
             </div>
           </form>
         </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="card p-4 rounded-lg">
+            <h3 class="font-semibold mb-2">Doctors</h3>
+            <ul id="staffListDoctor" class="space-y-2"></ul>
+          </div>
+          <div class="card p-4 rounded-lg">
+            <h3 class="font-semibold mb-2">Nurses</h3>
+            <ul id="staffListNurse" class="space-y-2"></ul>
+          </div>
+          <div class="card p-4 rounded-lg">
+            <h3 class="font-semibold mb-2">Receptionists</h3>
+            <ul id="staffListReceptionist" class="space-y-2"></ul>
+          </div>
+          <div class="card p-4 rounded-lg">
+            <h3 class="font-semibold mb-2">Admins</h3>
+            <ul id="staffListAdmin" class="space-y-2"></ul>
+          </div>
+        </div>
       </div>
 
 
@@ -288,6 +303,9 @@
       <nav class="space-y-1">
         <button class="doctor-side-btn w-full text-left" data-target="overview"> <i class="fa-solid fa-gauge-high mr-2"></i> Overview</button>
         <button class="doctor-side-btn w-full text-left" data-target="patients"> <i class="fa-solid fa-user-doctor mr-2"></i> Patients</button>
+        <button class="doctor-side-btn w-full text-left" data-target="appointments"> <i class="fa-solid fa-calendar-check mr-2"></i> Appointments</button>
+        <button class="doctor-side-btn w-full text-left" data-target="prescriptions"> <i class="fa-solid fa-pills mr-2"></i> Prescriptions</button>
+        <button class="doctor-side-btn w-full text-left" data-target="notes"> <i class="fa-solid fa-file-medical mr-2"></i> Patient Notes</button>
         <button class="doctor-side-btn w-full text-left" data-target="messages"> <i class="fa-solid fa-comment-dots mr-2"></i> Messages</button>
       </nav>
 
@@ -330,10 +348,90 @@
         <div class="card p-4 rounded-lg" id="doctorPatientsList"></div>
       </div>
 
+      <div class="dashboard-content hidden" data-section="appointments">
+        <h2 class="text-2xl font-bold mb-4">My Appointments</h2>
+        <div class="card p-4 rounded-lg">
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead>
+                <tr>
+                  <th class="px-3 py-2 text-left">Date</th>
+                  <th class="px-3 py-2 text-left">Time</th>
+                  <th class="px-3 py-2 text-left">Patient</th>
+                  <th class="px-3 py-2 text-left">Status</th>
+                  <th class="px-3 py-2 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="doctorAppointmentsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-content hidden" data-section="prescriptions">
+        <h2 class="text-2xl font-bold mb-4">Prescriptions</h2>
+        <div class="card p-4 rounded-lg mb-4">
+          <h3 class="font-semibold mb-3">Add New Prescription</h3>
+          <form id="prescriptionForm" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+            <div>
+              <label class="block text-sm font-medium mb-1">Patient</label>
+              <select id="prescriptionPatient" required class="form-control w-full px-3 py-2 rounded border">
+                <option value="">Select patient...</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Medication</label>
+              <input type="text" id="prescriptionMedication" required class="form-control w-full px-3 py-2 rounded border" placeholder="e.g., Amoxicillin 500mg" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Dosage</label>
+              <input type="text" id="prescriptionDosage" required class="form-control w-full px-3 py-2 rounded border" placeholder="e.g., 2x daily" />
+            </div>
+            <div>
+              <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Add Prescription</button>
+            </div>
+          </form>
+        </div>
+        <div class="card p-4 rounded-lg">
+          <h3 class="font-semibold mb-3">Active Prescriptions</h3>
+          <div id="doctorPrescriptionsList"></div>
+        </div>
+      </div>
+
+      <div class="dashboard-content hidden" data-section="notes">
+        <h2 class="text-2xl font-bold mb-4">Patient Notes</h2>
+        <div class="card p-4 rounded-lg mb-4">
+          <h3 class="font-semibold mb-3">Add Patient Note</h3>
+          <form id="patientNoteForm" class="space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium mb-1">Patient</label>
+                <select id="notePatient" required class="form-control w-full px-3 py-2 rounded border">
+                  <option value="">Select patient...</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Date</label>
+                <input type="date" id="noteDate" required class="form-control w-full px-3 py-2 rounded border" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Notes</label>
+              <textarea id="noteContent" rows="4" required class="form-control w-full px-3 py-2 rounded border" placeholder="Enter clinical notes, diagnosis, treatment plan..."></textarea>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Save Note</button>
+          </form>
+        </div>
+        <div class="card p-4 rounded-lg">
+          <h3 class="font-semibold mb-3">Recent Notes</h3>
+          <div id="doctorNotesList"></div>
+        </div>
+      </div>
+
       <div class="dashboard-content hidden" data-section="messages">
         <h2 class="text-2xl font-bold mb-4">Messages</h2>
         <div class="card p-4 rounded-lg">
-          <p class="text-sm">Simple internal messaging placeholder.</p>
+          <div id="doctorMessagesList"></div>
         </div>
       </div>
 
@@ -499,68 +597,65 @@
       <div class="dashboard-content hidden" data-section="registration">
         <h2 class="text-2xl font-bold mb-4">Patient Registration</h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-          <div class="card p-4 rounded-lg">
-            <form id="addPatientForm" class="space-y-3">
-              <div>
-                <label class="block text-sm font-medium mb-1">Full Name</label>
-                <input type="text" id="patientName" name="patientName" required class="form-control w-full px-3 py-2 rounded border" />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium mb-1">Age</label>
-                <input type="number" id="patientAge" name="patientAge" required class="form-control w-full px-3 py-2 rounded border" />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium mb-1">Gender</label>
-                <select id="patientGender" name="patientGender" required class="form-control w-full px-3 py-2 rounded border">
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium mb-1">Appointment Date</label>
-                <input type="datetime-local" id="appointmentDate" name="appointmentDate" required class="form-control w-full px-3 py-2 rounded border" />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium mb-1">Assigned Doctor</label>
-                <select id="assignedDoctor" name="assignedDoctor" required class="form-control w-full px-3 py-2 rounded border">
-                  <option value="Dr. Miller">Dr. Miller</option>
-                  <option value="Dr. Chen">Dr. Chen</option>
-                  <option value="Dr. Patel">Dr. Patel</option>
-                </select>
-              </div>
-
-              <div class="flex items-center gap-3">
-                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Add Patient</button>
-                <button type="reset" class="px-4 py-2 bg-gray-200 rounded">Reset</button>
-              </div>
-            </form>
-          </div>
-
-          <div class="card p-4 rounded-lg">
-            <h3 class="font-semibold mb-2">Recent Registrations</h3>
-            <div class="overflow-x-auto">
-              <table class="min-w-full" id="receptionPatientsTable">
-                <thead>
-                  <tr>
-                    <th class="px-3 py-2 text-left">Name</th>
-                    <th class="px-3 py-2 text-left">Age</th>
-                    <th class="px-3 py-2 text-left">Gender</th>
-                    <th class="px-3 py-2 text-left">Appt</th>
-                    <th class="px-3 py-2 text-left">Doctor</th>
-                    <th class="px-3 py-2 text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="patientTableBody">
-                  <!-- populated by script.js -->
-                </tbody>
-              </table>
+        <div class="card p-4 rounded-lg mb-4">
+          <h3 class="font-semibold mb-3">Add New Patient</h3>
+          <form id="addPatientForm" class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+            <div>
+              <label class="block text-sm font-medium mb-1">Full Name</label>
+              <input type="text" id="patientName" name="patientName" required class="form-control w-full px-3 py-2 rounded border" />
             </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-1">Age</label>
+              <input type="number" id="patientAge" name="patientAge" required class="form-control w-full px-3 py-2 rounded border" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-1">Gender</label>
+              <select id="patientGender" name="patientGender" required class="form-control w-full px-3 py-2 rounded border">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-1">Appointment Date</label>
+              <input type="datetime-local" id="appointmentDate" name="appointmentDate" required class="form-control w-full px-3 py-2 rounded border" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-1">Assigned Doctor</label>
+              <select id="assignedDoctor" name="assignedDoctor" required class="form-control w-full px-3 py-2 rounded border">
+                <option value="">Loading doctors...</option>
+              </select>
+            </div>
+
+            <div class="flex gap-2">
+              <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Add Patient</button>
+              <button type="reset" class="px-4 py-2 bg-gray-200 rounded">Reset</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card p-4 rounded-lg">
+          <h3 class="font-semibold mb-3">Recent Registrations</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full" id="receptionPatientsTable">
+              <thead>
+                <tr>
+                  <th class="px-3 py-2 text-left">Name</th>
+                  <th class="px-3 py-2 text-left">Age</th>
+                  <th class="px-3 py-2 text-left">Gender</th>
+                  <th class="px-3 py-2 text-left">Appt</th>
+                  <th class="px-3 py-2 text-left">Doctor</th>
+                  <th class="px-3 py-2 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="patientTableBody">
+                <!-- populated by script.js -->
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -571,6 +666,56 @@
       </div>
     </main>
   </section>
+
+  <!-- Patient View/Edit/Delete Modals -->
+  <div id="patientViewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" onclick="if(event.target===this) { this.classList.add('hidden'); this.classList.remove('flex'); }">
+    <div class="card rounded-xl shadow-lg p-6 max-w-md w-full mx-4" onclick="event.stopPropagation();">
+      <h3 class="text-xl font-bold mb-4">Patient Details</h3>
+      <div id="patientViewContent" class="space-y-2 mb-4">
+        <!-- Populated by JS -->
+      </div>
+      <button onclick="const m=document.getElementById('patientViewModal'); m.classList.add('hidden'); m.classList.remove('flex');" class="px-4 py-2 bg-gray-300 rounded">Close</button>
+    </div>
+  </div>
+
+  <div id="patientEditModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" onclick="if(event.target===this) { this.classList.add('hidden'); this.classList.remove('flex'); }">
+    <div class="card rounded-xl shadow-lg p-6 max-w-md w-full mx-4" onclick="event.stopPropagation();">
+      <h3 class="text-xl font-bold mb-4">Edit Patient</h3>
+      <form id="patientEditForm" class="space-y-3">
+        <input type="hidden" id="editPatientId" />
+        <div>
+          <label class="block text-sm font-medium mb-1">Full Name</label>
+          <input type="text" id="editPatientName" required class="form-control w-full px-3 py-2 rounded border" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Age</label>
+          <input type="number" id="editPatientAge" required class="form-control w-full px-3 py-2 rounded border" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Gender</label>
+          <select id="editPatientGender" required class="form-control w-full px-3 py-2 rounded border">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Assigned Doctor</label>
+          <select id="editAssignedDoctor" required class="form-control w-full px-3 py-2 rounded border">
+            <option value="">Loading doctors...</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Appointment Date</label>
+          <input type="date" id="editAppointmentDate" required class="form-control w-full px-3 py-2 rounded border" />
+        </div>
+        <div class="flex gap-2">
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Save</button>
+          <button type="button" onclick="const m=document.getElementById('patientEditModal'); m.classList.add('hidden'); m.classList.remove('flex');" class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Script -->
   <script src="script.js"></script>
