@@ -74,6 +74,12 @@ $result = $stmt->get_result();
 
 // Handle user not found
 if (!$result || $result->num_rows === 0) {
+    // Log failed login attempt
+    log_action('login_failed', [
+        'attempted_username' => $username,
+        'reason' => 'user_not_found'
+    ]);
+
     send_json([
       "status" => "error",
       "message" => "Invalid username or password"
@@ -141,12 +147,24 @@ if ($isValid) {
         }
     }
 
+    // Log successful login
+    log_action('login_successful', [
+        'username' => $row["username"],
+        'role' => $row["role"] ?? ''
+    ]);
+
     send_json([
         "status" => "success",
         "username" => $row["username"],
         "role" => $row["role"] ?? ''
     ], 200);
 } else {
+    // Log failed login attempt
+    log_action('login_failed', [
+        'attempted_username' => $username,
+        'reason' => 'invalid_password'
+    ]);
+
     send_json([
       "status" => "error",
       "message" => "Invalid username or password"

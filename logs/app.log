@@ -1,0 +1,2 @@
+2025-10-31T11:09:27+00:00 | user_id=NULL | user=system | action=e2e_created_user | details={"username":"e2e_test_3775f63a","role":"Receptionist"}
+2025-11-19T15:09:07+01:00 | user_id=1 | user=admin | action=login_successful | details={"username":"admin","role":"Admin"}

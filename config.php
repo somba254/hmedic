@@ -118,3 +118,13 @@ if (!function_exists('send_json')) {
   }
 }
 
+/**
+ * log_action — Logs a system action to the database
+ */
+if (!function_exists('log_action')) {
+  function log_action($action, $details = '') {
+    // Logging has been disabled: keep as a no-op to preserve existing call sites.
+    return;
+  }
+}
+

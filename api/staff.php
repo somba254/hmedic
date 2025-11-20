@@ -38,6 +38,13 @@ if ($method === 'POST') {
   }
   $stmt->bind_param('sss', $username, $hash, $role);
   if ($stmt->execute()) {
+    // Log staff creation
+    log_action('staff_created', [
+        'created_by' => current_user()['username'],
+        'new_staff_username' => $username,
+        'role' => $role
+    ]);
+
     send_json(['status' => 'success', 'id' => $stmt->insert_id], 201);
   } else {
     send_json(['status' => 'error', 'message' => $stmt->error], 500);

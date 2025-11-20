@@ -205,7 +205,8 @@ input:checked + .slider:before {
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
   aside {
-    width: 200px;
+    width: 100%;
+    border-right: none;
   }
   .card {
     font-size: 0.9rem;

@@ -52,22 +52,28 @@ elseif ($method === "PUT" || $method === "PATCH") {
     if ($time) {
         $stmt = $conn->prepare("UPDATE appointments SET date=?, time=? WHERE id=?");
         if (!$stmt) {
+            $err = $conn->error ?: 'unknown';
+            error_log("appointments.php prepare failed: $err");
             send_json([
                 "status" => "error",
-                "message" => "Server error preparing statement"
+                "message" => "Server error preparing statement",
+                "db_error" => $err
             ], 500);
-            $conn->close();
+            if (isset($conn) && $conn) $conn->close();
             exit;
         }
         $stmt->bind_param("ssi", $date, $time, $id);
     } else {
         $stmt = $conn->prepare("UPDATE appointments SET date=? WHERE id=?");
         if (!$stmt) {
+            $err = $conn->error ?: 'unknown';
+            error_log("appointments.php prepare failed: $err");
             send_json([
                 "status" => "error",
-                "message" => "Server error preparing statement"
+                "message" => "Server error preparing statement",
+                "db_error" => $err
             ], 500);
-            $conn->close();
+            if (isset($conn) && $conn) $conn->close();
             exit;
         }
         $stmt->bind_param("si", $date, $id);
