@@ -18,15 +18,15 @@ include_once(__DIR__ . "/../config.php");
 $method = $_SERVER["REQUEST_METHOD"];
 
 if ($method === "GET") {
-    $res = $conn->query("SELECT id, name, age, gender, doctor, date FROM patients ORDER BY id DESC");
-    if ($res === false) {
-        send_json([
-          "status" => "error",
-          "message" => "Query failed"
-        ], 500);
-        $conn->close();
-        exit;
-    }
+        $res = $conn->query("SELECT id, name, age, gender, doctor, date FROM patients ORDER BY id DESC");
+        if ($res === false) {
+                send_json([
+                    "status" => "error",
+                    "message" => "Query failed: " . ($conn ? $conn->error : 'unknown')
+                ], 500);
+                if (isset($conn) && $conn) $conn->close();
+                exit;
+        }
     $patients = [];
     while ($row = $res->fetch_assoc()) {
         $patients[] = $row;
@@ -50,7 +50,7 @@ elseif ($method === "POST") {
           "status" => "error",
           "message" => "All fields required"
         ], 400);
-        $conn->close();
+        if (isset($conn) && $conn) $conn->close();
         exit;
     }
 
@@ -61,7 +61,7 @@ elseif ($method === "POST") {
           "status" => "error",
           "message" => "Server error preparing statement"
         ], 500);
-        $conn->close();
+        if (isset($conn) && $conn) $conn->close();
         exit;
     }
     $stmt->bind_param("sisss", $name, $age, $gender, $doctor, $date);
@@ -80,7 +80,7 @@ elseif ($method === "POST") {
         ], 500);
     }
 
-    $stmt->close();
+    if (isset($stmt) && $stmt) $stmt->close();
 }
 
 elseif ($method === "PUT" || $method === "PATCH") {
@@ -99,7 +99,7 @@ elseif ($method === "PUT" || $method === "PATCH") {
             "status" => "error",
             "message" => "Missing required fields"
         ], 400);
-        $conn->close();
+        if (isset($conn) && $conn) $conn->close();
         exit;
     }
 
@@ -109,7 +109,7 @@ elseif ($method === "PUT" || $method === "PATCH") {
             "status" => "error",
             "message" => "Server error preparing statement"
         ], 500);
-        $conn->close();
+        if (isset($conn) && $conn) $conn->close();
         exit;
     }
     $stmt->bind_param("sisssi", $name, $age, $gender, $doctor, $date, $id);
@@ -126,7 +126,7 @@ elseif ($method === "PUT" || $method === "PATCH") {
             "error" => $stmt->error
         ], 500);
     }
-    $stmt->close();
+    if (isset($stmt) && $stmt) $stmt->close();
 }
 
 elseif ($method === "DELETE") {
@@ -167,8 +167,9 @@ elseif ($method === "DELETE") {
             "error" => $stmt->error
         ], 500);
     }
-    $stmt->close();
+    if (isset($stmt) && $stmt) $stmt->close();
+
+    if (isset($conn) && $conn) $conn->close();
 }
 
-$conn->close();
 

@@ -30,7 +30,7 @@ Configuration
   $user = 'root';
   $pass = '';
   $db   = 'hmedic_db';
-  $port = 3307; // if your MySQL runs on 3307
+  $port = 3306; // default XAMPP MySQL port
   ```
 
 Authentication and Roles

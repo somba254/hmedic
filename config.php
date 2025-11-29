@@ -10,7 +10,7 @@ $host = getenv('DB_HOST') ?: 'localhost';
 $user = getenv('DB_USER') ?: 'root';
 $pass = getenv('DB_PASS') ?: '';
 $db   = getenv('DB_NAME') ?: 'hmedic_db';
-$port = getenv('DB_PORT') ?: 3307;
+$port = getenv('DB_PORT') ?: 3306;
 
 // Optionally override credentials using config.local.php (not committed to VCS)
 $localConfig = __DIR__ . DIRECTORY_SEPARATOR . 'config.local.php';

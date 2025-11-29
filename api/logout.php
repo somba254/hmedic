@@ -16,6 +16,6 @@ if (php_sapi_name() !== 'cli') {
 
 send_json(['status' => 'success', 'message' => 'Logged out'], 200);
 
-$conn->close();
+if (isset($conn) && $conn) $conn->close();
 
 ?>

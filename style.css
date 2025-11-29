@@ -204,11 +204,78 @@ input:checked + .slider:before {
 
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
+  /* Off-canvas default: keep aside fixed and off-screen using transform */
   aside {
-    width: 100%;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 78%;
+    max-width: 320px;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 60;
+    overflow-y: auto;
+    box-shadow: 2px 0 12px rgba(2,6,23,0.2);
     border-right: none;
   }
   .card {
     font-size: 0.9rem;
   }
+}
+
+/* Off-canvas sidebar behaviour for mobile: aside is off-screen via transform by default */
+@media (max-width: 768px) {
+  aside.open {
+    transform: translateX(0);
+    /* override width classes if needed */
+    width: 78% !important;
+    max-width: 320px !important;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 55;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    pointer-events: none;
+  }
+  .sidebar-overlay.show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  /* Mobile close button inside aside (left edge) */
+  .aside-close-btn {
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    z-index: 70;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.03);
+  }
+  .aside-close-btn i { font-size: 1rem; }
+
+  /* Mobile sidebar toggle (hamburger) styling */
+  .mobile-sidebar-toggle { gap: 6px; align-items: center; }
+  .mobile-sidebar-toggle i { transition: transform 0.18s ease, opacity 0.18s ease; font-size: 1.05rem; }
+  .mobile-sidebar-toggle[aria-expanded="true"] i { transform: rotate(90deg) scale(1.05); }
+  .menu-label { font-size: 0.95rem; line-height: 1; }
+  @media (min-width: 769px) { .menu-label { display: none; } }
+
+  /* Ensure main content is scrollable under overlay */
+  main { position: relative; z-index: 10; }
+}
+
+/* Prevent background scrolling when off-canvas sidebar is open */
+.no-scroll {
+  overflow: hidden;
 }

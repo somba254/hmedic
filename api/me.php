@@ -17,6 +17,6 @@ if ($user) {
     ], 200);
 }
 
-$conn->close();
+if (isset($conn) && $conn) $conn->close();
 
 ?>

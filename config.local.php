@@ -3,7 +3,7 @@
 // The values below were provided to connect to the external/local database.
 
 $host = 'localhost';
-$port = 3307;
+$port = 3306;
 $user = 'root';
 $pass = '';
 $db   = 'hmedic_db';

@@ -1034,6 +1034,150 @@ document.addEventListener("DOMContentLoaded", () => {
   })();
 
   /**
+   * Mobile sidebar toggle handlers
+   * - toggles the aside open/closed on small screens
+   * - closes sidebar when overlay is clicked or when a nav item is selected
+   */
+  (function setupMobileSidebarToggles() {
+    const overlay = document.getElementById('sidebarOverlay');
+    const toggles = Array.from(document.querySelectorAll('.mobile-sidebar-toggle'));
+    let currentToggle = null;
+    let focusTrapCleanup = null;
+
+    function closeAllSidebars() {
+      document.querySelectorAll('aside').forEach(a => a.classList.remove('open'));
+      if (overlay) overlay.classList.remove('show');
+      // restore page scroll
+      document.body.classList.remove('no-scroll');
+      // update aria-expanded on toggles and reset icon to bars
+      toggles.forEach(t => {
+        t.setAttribute('aria-expanded', 'false');
+        const icon = t.querySelector('i');
+        if (icon) {
+          icon.classList.remove('fa-xmark');
+          icon.classList.add('fa-bars');
+        }
+      });
+      // cleanup focus trap if any
+      if (typeof focusTrapCleanup === 'function') {
+        try { focusTrapCleanup(); } catch (e) { /* ignore */ }
+        focusTrapCleanup = null;
+      }
+      // restore aria-hidden on mains
+      document.querySelectorAll('[id$="-dashboard"]').forEach(d => {
+        const m = d.querySelector('main');
+        if (m) m.removeAttribute('aria-hidden');
+      });
+      // restore focus to the toggle that opened the sidebar (if any)
+      try { if (currentToggle && currentToggle.focus) currentToggle.focus(); } catch (e) { /* ignore */ }
+      // clear current toggle reference after focus restored
+      currentToggle = null;
+    }
+
+    function openSidebarFor(toggle) {
+      // find the closest dashboard section parent and open its aside
+      const dashboard = toggle.closest('[id$="-dashboard"]');
+      if (!dashboard) return;
+      const aside = dashboard.querySelector('aside');
+      if (!aside) return;
+      // close others first
+      closeAllSidebars();
+      aside.classList.add('open');
+      if (overlay) overlay.classList.add('show');
+      // prevent background scroll while menu open
+      document.body.classList.add('no-scroll');
+      // mark toggle aria
+      if (toggle && toggle.setAttribute) toggle.setAttribute('aria-expanded', 'true');
+      // change hamburger icon to X
+      const icon = toggle.querySelector('i');
+      if (icon) {
+        icon.classList.remove('fa-bars');
+        icon.classList.add('fa-xmark');
+      }
+      currentToggle = toggle;
+      // setup focus trap inside this aside
+      focusTrapCleanup = setupFocusTrap(aside);
+      // hide main content from assistive tech while aside is open
+      const main = dashboard.querySelector('main');
+      if (main) main.setAttribute('aria-hidden', 'true');
+    }
+
+    toggles.forEach(t => {
+      t.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const dashboard = t.closest('[id$="-dashboard"]');
+        if (!dashboard) return;
+        const aside = dashboard.querySelector('aside');
+        if (!aside) return;
+        const isOpen = aside.classList.contains('open');
+        if (isOpen) {
+          closeAllSidebars();
+        } else {
+          openSidebarFor(t);
+        }
+      });
+    });
+
+    // Close when overlay clicked
+    if (overlay) {
+      overlay.addEventListener('click', () => {
+        closeAllSidebars();
+      });
+    }
+
+    // close buttons inside aside
+    document.querySelectorAll('.aside-close-btn').forEach(b => {
+      b.addEventListener('click', (e) => { e.preventDefault(); closeAllSidebars(); });
+    });
+
+    // Close on Escape and manage focus trap cleanup
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape') {
+        closeAllSidebars();
+      }
+    });
+
+    // Focus-trap helper: returns a cleanup function to remove the keydown listener
+    function setupFocusTrap(container) {
+      const focusableSelector = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      const nodes = Array.from(container.querySelectorAll(focusableSelector)).filter(n => n.offsetParent !== null);
+      if (nodes.length === 0) return function(){};
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      // focus the first element
+      try { first.focus(); } catch (e) { /* ignore */ }
+
+      function onKeyDown(e) {
+        if (e.key !== 'Tab') return;
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+
+      document.addEventListener('keydown', onKeyDown);
+      return function cleanup() { document.removeEventListener('keydown', onKeyDown); };
+    }
+
+    // Close aside when a nav button is clicked (mobile)
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest && e.target.closest('aside nav button');
+      if (!btn) return;
+      // only on small screens
+      if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) {
+        closeAllSidebars();
+      }
+    });
+  })();
+
+  /**
    * Initial Data Load
    * Loads patients, appointments, staff, and billing data on page load if relevant sections are visible.
    */

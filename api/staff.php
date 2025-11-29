@@ -23,7 +23,7 @@ if ($method === 'POST') {
 
   if (!$username || !$password || !$role) {
     send_json(['status' => 'error', 'message' => 'username, password and role required'], 400);
-    $conn->close();
+    if (isset($conn) && $conn) $conn->close();
     exit;
   }
 
@@ -33,7 +33,7 @@ if ($method === 'POST') {
   $stmt = $conn->prepare("INSERT INTO staff (username, password, role) VALUES (?,?,?)");
   if (!$stmt) {
     send_json(['status' => 'error', 'message' => 'Server error preparing statement'], 500);
-    $conn->close();
+    if (isset($conn) && $conn) $conn->close();
     exit;
   }
   $stmt->bind_param('sss', $username, $hash, $role);
@@ -49,20 +49,20 @@ if ($method === 'POST') {
   } else {
     send_json(['status' => 'error', 'message' => $stmt->error], 500);
   }
-  $stmt->close();
-  $conn->close();
+  if (isset($stmt) && $stmt) $stmt->close();
+  if (isset($conn) && $conn) $conn->close();
   exit;
 }
 
 // Default: GET — list staff (Admin and Receptionist)
 require_role(['Admin', 'Receptionist']);
 $res = $conn->query("SELECT id, username, role FROM staff ORDER BY id ASC");
-if ($res === false) {
+  if ($res === false) {
   send_json([
     "status" => "error",
     "message" => "Query failed"
   ], 500);
-  $conn->close();
+    if (isset($conn) && $conn) $conn->close();
   exit;
 }
 $staff = [];
@@ -71,4 +71,4 @@ while ($row = $res->fetch_assoc()) {
 }
 send_json($staff, 200);
 
-$conn->close();
+if (isset($conn) && $conn) $conn->close();

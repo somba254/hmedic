@@ -38,6 +38,9 @@
     <div class="blob"></div>
   </div>
 
+  <!-- Sidebar overlay used on mobile when aside is open -->
+  <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
   <!-- ---------- LANDING / LOGIN ---------- -->
   <section id="landing" class="page-section min-h-screen flex items-center justify-center p-6">
     <div class="container max-w-5xl mx-auto">
@@ -119,6 +122,7 @@
           <div class="text-xs text-gray-500 dark:text-gray-300">Administrator</div>
         </div>
       </div>
+      <button class="aside-close-btn md:hidden p-2 rounded bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-gray-200" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
 
       <nav class="space-y-1">
         <button class="admin-side-btn w-full text-left" data-target="overview"> <i class="fa-solid fa-gauge-high mr-2"></i> Overview</button>
@@ -136,7 +140,12 @@
 
     <main class="flex-1 p-6 overflow-auto">
       <div class="flex justify-between items-center mb-4">
-        <div></div>
+        <div class="flex items-center gap-3">
+          <button class="mobile-sidebar-toggle md:hidden px-3 py-2 mr-2 rounded bg-gray-100 dark:bg-slate-700 flex items-center" aria-label="Open menu" aria-expanded="false">
+            <i class="fa-solid fa-bars"></i>
+            <span class="menu-label ml-2">Menu</span>
+          </button>
+        </div>
         <div class="flex items-center gap-3">
           <label class="toggle-switch">
             <input type="checkbox" id="darkModeToggleDashboardAdmin" />
@@ -301,6 +310,7 @@
           <div class="text-xs text-gray-500 dark:text-gray-300">Cardiology</div>
         </div>
       </div>
+      <button class="aside-close-btn md:hidden p-2 rounded bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-gray-200" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
 
       <nav class="space-y-1">
         <button class="doctor-side-btn w-full text-left" data-target="overview"> <i class="fa-solid fa-gauge-high mr-2"></i> Overview</button>
@@ -320,7 +330,12 @@
 
     <main class="flex-1 p-6 overflow-auto">
       <div class="flex justify-between items-center mb-4">
-        <div></div>
+        <div class="flex items-center gap-3">
+          <button class="mobile-sidebar-toggle md:hidden px-3 py-2 mr-2 rounded bg-gray-100 dark:bg-slate-700 flex items-center" aria-label="Open menu" aria-expanded="false">
+            <i class="fa-solid fa-bars"></i>
+            <span class="menu-label ml-2">Menu</span>
+          </button>
+        </div>
         <div class="flex items-center gap-3">
           <label class="toggle-switch">
             <input type="checkbox" id="darkModeToggleDashboardDoctor" />
@@ -460,6 +475,7 @@
           <div class="text-xs text-gray-500 dark:text-gray-300">Ward A</div>
         </div>
       </div>
+      <button class="aside-close-btn md:hidden p-2 rounded bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-gray-200" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
 
       <nav class="space-y-1">
         <button class="nurse-side-btn w-full text-left" data-target="overview"> <i class="fa-solid fa-gauge-high mr-2"></i> Overview</button>
@@ -477,7 +493,12 @@
 
     <main class="flex-1 p-6 overflow-auto">
       <div class="flex justify-between items-center mb-4">
-        <div></div>
+        <div class="flex items-center gap-3">
+          <button class="mobile-sidebar-toggle md:hidden px-3 py-2 mr-2 rounded bg-gray-100 dark:bg-slate-700 flex items-center" aria-label="Open menu" aria-expanded="false">
+            <i class="fa-solid fa-bars"></i>
+            <span class="menu-label ml-2">Menu</span>
+          </button>
+        </div>
         <div class="flex items-center gap-3">
           <label class="toggle-switch">
             <input type="checkbox" id="darkModeToggleDashboardNurse" />
@@ -536,6 +557,7 @@
           <div class="text-xs text-gray-500 dark:text-gray-300">Front Desk</div>
         </div>
       </div>
+      <button class="aside-close-btn md:hidden p-2 rounded bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-gray-200" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
 
       <nav class="space-y-1">
         <button class="reception-side-btn w-full text-left" data-target="overview"> <i class="fa-solid fa-gauge-high mr-2"></i> Overview</button>
@@ -553,7 +575,12 @@
 
     <main class="flex-1 p-6 overflow-auto">
       <div class="flex justify-between items-center mb-4">
-        <div></div>
+        <div class="flex items-center gap-3">
+          <button class="mobile-sidebar-toggle md:hidden px-3 py-2 mr-2 rounded bg-gray-100 dark:bg-slate-700 flex items-center" aria-label="Open menu" aria-expanded="false">
+            <i class="fa-solid fa-bars"></i>
+            <span class="menu-label ml-2">Menu</span>
+          </button>
+        </div>
         <div class="flex items-center gap-3">
           <label class="toggle-switch">
             <input type="checkbox" id="darkModeToggleDashboardReception" />
